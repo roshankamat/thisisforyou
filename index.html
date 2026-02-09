@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>For You ❤️</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Nunito:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- CSS VARIABLES & RESET --- */
+        :root {
+            --primary: #f8b6c8;       /* Pastel Pink */
+            --primary-dark: #e090a8;
+            --secondary: #fff0f5;     /* Lavender Blush */
+            --rose-gold: #b76e79;
+            --text: #5d4e55;
+            --white: #ffffff;
+            --shadow: 0 10px 30px rgba(248, 182, 200, 0.3);
+            --font-head: 'Dancing Script', cursive;
+            --font-body: 'Nunito', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            color: var(--text);
+            background: linear-gradient(135deg, #fff5f8 0%, #fff0f5 100%);
+            overflow-x: hidden;
+            min-height: 100vh;
+            cursor: default; /* Will act as canvas for custom cursor */
+        }
+
+        /* --- UTILITIES --- */
+        h1, h2, h3 { font-family: var(--font-head); color: var(--rose-gold); }
+        p { line-height: 1.6; color: var(--text); }
+        
+        .hidden { display: none !important; }
+        .fade-in { opacity: 0; transform: translateY(20px); transition: all 0.8s ease-out; }
+        .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+        /* --- BACKGROUND ANIMATION (Floating Hearts) --- */
+        .bg-hearts {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            overflow: hidden;
+        }
+        .bg-heart {
+            position: absolute;
+            bottom: -50px;
+            background: rgba(255, 182, 193, 0.4);
+            clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 50% 75%, 18% 100%, 0% 38%);
+            animation: floatUp linear infinite;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+            50% { opacity: 0.6; }
+            100% { transform: translateY(-120vh) rotate(360deg); opacity: 0; }
+        }
+
+        /* --- CUSTOM CURSOR TRAIL --- */
+        .cursor-trail {
+            position: fixed;
+            pointer-events: none;
+            font-size: 1rem;
+            animation: fadeTrail 1s forwards;
+            z-index: 9999;
+        }
+        @keyframes fadeTrail {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0.5) translateY(-20px); }
+        }
+
+        /* --- MUSIC TOGGLE --- */
+        .music-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: var(--white);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+            z-index: 1000;
+            transition: transform 0.3s;
+            font-size: 1.2rem;
+            border: 2px solid var(--primary);
+        }
+        .music-toggle:hover { transform: scale(1.1); }
+
+        /* =========================================
+           PAGE 1: PROPOSAL SCREEN
+           ========================================= */
+        #proposal-screen {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, #fff 0%, #ffe6ee 100%);
+            z-index: 500;
+            transition: opacity 1s ease;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .photo-frame {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 5px solid var(--white);
+            box-shadow: 0 0 30px rgba(248, 182, 200, 0.6);
+            overflow: hidden;
+            margin-bottom: 30px;
+            animation: float 4s ease-in-out infinite;
+            background-color: #eee;
+        }
+
+        .photo-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .proposal-text {
+            font-size: 3.5rem;
+            margin-bottom: 40px;
+            color: var(--rose-gold);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .button-container {
+            position: relative;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            align-items: center;
+            min-height: 80px; /* Space for moving button */
+            width: 100%;
+        }
+
+        .btn {
+            padding: 12px 35px;
+            border: none;
+            border-radius: 50px;
+            font-family: var(--font-body);
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+
+        .btn-yes {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 5px 15px rgba(248, 182, 200, 0.6);
+            animation: pulse 2s infinite;
+        }
+
+        .btn-yes:hover {
+            transform: scale(1.1);
+            background: var(--primary-dark);
+        }
+
+        .btn-no {
+            background: var(--white);
+            color: var(--text);
+            border: 2px solid #eee;
+            /* Absolute positioning handled by JS for the 'runaway' effect */
+            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94); 
+        }
+
+        /* =========================================
+           PAGE 2: MAIN WEBSITE
+           ========================================= */
+        #main-content {
+            opacity: 0;
+            transition: opacity 1.5s ease;
+            padding-bottom: 50px;
+        }
+
+        .section {
+            padding: 80px 20px;
+            max-width: 1000px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        /* Hero Text */
+        .hero-text h2 { font-size: 4rem; margin-bottom: 20px; }
+        .hero-text p { font-size: 1.2rem; max-width: 600px; margin: 0 auto; }
+
+        /* Photo Gallery */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+        }
+
+        .gallery-item {
+            position: relative;
+            height: 300px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            cursor: pointer;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .gallery-item:hover img { transform: scale(1.1); }
+
+        .gallery-item::after {
+            content: '❤️';
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 3rem;
+            transition: transform 0.3s ease;
+            text-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+
+        .gallery-item:hover::after { transform: translate(-50%, -50%) scale(1); }
+
+        /* Love Notes */
+        .notes-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .note-card {
+            background: var(--white);
+            padding: 30px;
+            width: 280px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            position: relative;
+            transition: transform 0.3s;
+            animation: floatCard 6s ease-in-out infinite;
+        }
+        
+        .note-card:nth-child(2) { animation-delay: 1s; }
+        .note-card:nth-child(3) { animation-delay: 2s; }
+
+        .note-card:hover { transform: translateY(-10px) rotate(2deg); }
+        .note-card h3 { font-size: 1.5rem; margin-bottom: 10px; }
+
+        /* Final Message */
+        .final-msg h2 { font-size: 3.5rem; margin-bottom: 15px; }
+
+        /* --- ANIMATIONS KEYFRAMES --- */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(248, 182, 200, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(248, 182, 200, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(248, 182, 200, 0); }
+        }
+
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px) rotate(-5deg); }
+            75% { transform: translateX(5px) rotate(5deg); }
+            100% { transform: translateX(0); }
+        }
+        
+        @keyframes floatCard {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes burst {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+
+        /* Celebration Particles */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            animation: burst 1s ease-out forwards;
+            font-size: 1.5rem;
+            z-index: 1000;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .proposal-text { font-size: 2.5rem; }
+            .button-container { flex-direction: column; gap: 15px; }
+            .btn { width: 80%; max-width: 300px; }
+            .hero-text h2 { font-size: 3rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-hearts" id="bg-hearts"></div>
+
+    <div class="music-toggle" id="music-toggle">
+        🎵
+    </div>
+    <audio id="bg-music" loop>
+        <source src="#" type="audio/mp3"> 
+    </audio>
+
+    <div id="proposal-screen">
+        <div class="photo-frame">
+            <img src="WhatsApp Image 2026-02-09 at 6.08.43 PM.jpeg" alt="Her Beautiful Face">
+        </div>
+        
+        <h1 class="proposal-text">Will you be my Valentine? 💖</h1>
+        
+        <div class="button-container">
+            <button class="btn btn-yes" id="yes-btn">Yes 💕</button>
+            <button class="btn btn-no" id="no-btn">No 😒</button>
+        </div>
+    </div>
+
+    <main id="main-content" class="hidden">
+        
+        <section class="section hero-text">
+            <h2 class="fade-in">You Make My World Better 💗</h2>
+            <p class="fade-in">“Hey Muskan… I don’t know when it happened, but you became my whole world so quietly that I didn’t even realize it. When I’m with you, everything else fades away. Your laugh makes me smile, your childish moments melt my heart, and the way you care for me makes me feel truly loved. I’m completely, hopelessly crazy about you.” ❤️.</p>
+        </section>
+
+        <section class="section">
+            <div class="gallery-grid fade-in">
+                <div class="gallery-item"><img src="WhatsApp Image 2026-02-09 at 6.37.53 PM.jpeg" alt="Memory 1"></div>
+                <div class="gallery-item"><img src="WhatsApp Image 2026-02-09 at 6.37.52 PM.jpeg" alt="Memory 2"></div>
+                <div class="gallery-item"><img src="WhatsApp Image 2026-02-09 at 6.27.02 PM.jpeg" alt="Memory 3"></div>
+                <div class="gallery-item"><img src="WhatsApp Image 2026-02-09 at 6.27.05 PM.jpeg" alt="Memory 4"></div>
+                <div class="gallery-item"><img src="WhatsApp Image 2026-02-09 at 6.27.04 PM.jpeg" alt="Memory 5"></div>
+                <div class="gallery-item"><img src="WhatsApp Image 2026-02-09 at 6.08.18 PM (2).jpeg" alt="Memory 6"></div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="notes-container">
+                <div class="note-card fade-in">
+                    <h3>Your Smile ✨</h3>
+                    <p>Whenever you smile, it feels like peace, comfort, and joy all at once, making everything stop and feel heavenly.💓</p>
+                </div>
+                <div class="note-card fade-in">
+                    <h3>Your Hugs 🧸</h3>
+                    <p>My safe place. When you hold me, everything else just fades away.</p>
+                </div>
+                <div class="note-card fade-in">
+                    <h3>Us 💑</h3>
+                    <p>“Together, we’re the cutest little duo, perfectly in sync and impossible to break. I can’t imagine my days without you anymore… you’re truly my everything.” 💖</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section final-msg fade-in">
+            <h2>I’m so lucky to have you ❤️</h2>
+            <p>Thank you for being you. I love You ❤️ , my love.</p>
+        </section>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const yesBtn = document.getElementById('yes-btn');
+            const noBtn = document.getElementById('no-btn');
+            const proposalScreen = document.getElementById('proposal-screen');
+            const mainContent = document.getElementById('main-content');
+            const bgHearts = document.getElementById('bg-hearts');
+            const musicToggle = document.getElementById('music-toggle');
+            const music = document.getElementById('bg-music');
+
+            // --- 1. BACKGROUND FLOATING HEARTS GENERATOR ---
+            function createHearts() {
+                const heart = document.createElement('div');
+                heart.classList.add('bg-heart');
+                heart.style.left = Math.random() * 100 + 'vw';
+                heart.style.width = Math.random() * 20 + 10 + 'px';
+                heart.style.height = heart.style.width;
+                heart.style.animationDuration = Math.random() * 5 + 5 + 's';
+                bgHearts.appendChild(heart);
+
+                setTimeout(() => {
+                    heart.remove();
+                }, 10000);
+            }
+            setInterval(createHearts, 1000);
+
+            // --- 2. THE RUNAWAY "NO" BUTTON ---
+            function moveNoButton() {
+                const x = Math.random() * (window.innerWidth - noBtn.offsetWidth - 40);
+                const y = Math.random() * (window.innerHeight - noBtn.offsetHeight - 40);
+                
+                noBtn.style.position = 'absolute';
+                noBtn.style.left = `${x}px`;
+                noBtn.style.top = `${y}px`;
+                
+                // Add Shake Animation class
+                noBtn.style.animation = 'shake 0.3s ease';
+                setTimeout(() => noBtn.style.animation = 'none', 300);
+            }
+
+            // Trigger on hover (desktop) and touch (mobile)
+            noBtn.addEventListener('mouseover', moveNoButton);
+            noBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault(); // Prevent clicking
+                moveNoButton();
+            });
+
+            // --- 3. THE "YES" CELEBRATION ---
+            yesBtn.addEventListener('click', () => {
+                // Celebration Burst
+                for (let i = 0; i < 50; i++) {
+                    createParticle(window.innerWidth / 2, window.innerHeight / 2);
+                }
+
+                // Fade out Proposal, Fade in Main
+                proposalScreen.style.opacity = '0';
+                
+                setTimeout(() => {
+                    proposalScreen.classList.add('hidden');
+                    mainContent.classList.remove('hidden');
+                    
+                    // Trigger reflow to enable transition
+                    void mainContent.offsetWidth; 
+                    
+                    mainContent.style.opacity = '1';
+                    
+                    // Start Scroll Observer
+                    initScrollAnimations();
+                }, 1000);
+            });
+
+            function createParticle(x, y) {
+                const particle = document.createElement('span');
+                particle.innerHTML = ['❤️', '💕', '✨', '💖'][Math.floor(Math.random() * 4)];
+                particle.classList.add('particle');
+                document.body.appendChild(particle);
+
+                // Random direction
+                const destinationX = x + (Math.random() - 0.5) * 500;
+                const destinationY = y + (Math.random() - 0.5) * 500;
+                
+                const animation = particle.animate([
+                    { transform: `translate(${x}px, ${y}px) scale(0)`, opacity: 1 },
+                    { transform: `translate(${destinationX}px, ${destinationY}px) scale(1.5)`, opacity: 0 }
+                ], {
+                    duration: 1000 + Math.random() * 1000,
+                    easing: 'cubic-bezier(0, .9, .57, 1)',
+                });
+
+                animation.onfinish = () => particle.remove();
+            }
+
+            // --- 4. SCROLL FADE-IN ANIMATION ---
+            function initScrollAnimations() {
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('visible');
+                        }
+                    });
+                }, { threshold: 0.1 });
+
+                document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+            }
+
+            // --- 5. CURSOR TRAIL ---
+            document.addEventListener('mousemove', (e) => {
+                if(Math.random() > 0.8) { // Don't create on every single frame, too heavy
+                    const heart = document.createElement('div');
+                    heart.classList.add('cursor-trail');
+                    heart.innerText = '❤';
+                    heart.style.left = `${e.pageX}px`;
+                    heart.style.top = `${e.pageY}px`;
+                    document.body.appendChild(heart);
+                    setTimeout(() => heart.remove(), 1000);
+                }
+            });
+
+            // --- 6. MUSIC TOGGLE ---
+            let isPlaying = false;
+            musicToggle.addEventListener('click', () => {
+                if (isPlaying) {
+                    music.pause();
+                    musicToggle.innerText = '🎵';
+                } else {
+                    // Note: Browsers block autoplay. User interaction is required.
+                    music.play().catch(e => console.log("Audio interaction needed"));
+                    musicToggle.innerText = '⏸️';
+                }
+                isPlaying = !isPlaying;
+            });
+        });
+    </script>
+</body>
+</html>
